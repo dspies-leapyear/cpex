@@ -1,6 +1,4 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Impl.App
   ( App
@@ -8,16 +6,11 @@ module Impl.App
   )
 where
 
+import           Control.Monad.IO.Class         ( MonadIO )
 import           Control.Monad.Logger
 
-import           CP.Class
-import           Impl.GetArgsImpl
-import           Impl.ReadFileImpl
-import           Impl.WriteFileImpl
-
-newtype App x = App (WriteFileT (ReadFileT (GetArgsT (LoggingT IO))) x)
-  deriving (Functor, Applicative, Monad, MonadGetArgs, MonadLogger, MonadReadFile, MonadWriteFile)
+newtype App x = App (LoggingT IO x)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadLogger)
 
 runApp :: App x -> IO x
-runApp (App act) =
-  runStderrLoggingT $ runGetArgsT $ runReadFileT $ runWriteFileT act
+runApp (App act) = runStderrLoggingT act
