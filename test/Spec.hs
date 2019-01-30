@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -21,27 +22,38 @@ newtype MockServices x =
     MockServices (MockWriteFileT (MockReadFileT (MockGetArgsT (NoLoggingT IO))) x)
   deriving (Functor, Applicative, Monad, MonadIO, MonadGetArgs, MonadLogger, MonadReadFile, MonadWriteFile)
 
+data MockServicesEnv = MockServicesEnv
+  { cmdLineArgs :: (String, String)
+  , inputFileSystem :: Map String String
+  }
+
+defaultMockServicesEnv :: MockServicesEnv
+defaultMockServicesEnv = MockServicesEnv
+  { cmdLineArgs     = ("input.txt", "output.txt")
+  , inputFileSystem = Map.empty
+  }
+
 runMockServices
-  :: (String, String)
-  -> Map String String
-  -> MockServices x
-  -> IO (x, Map String String)
-runMockServices args infileContents (MockServices act) =
+  :: MockServicesEnv -> MockServices x -> IO (x, Map String String)
+runMockServices MockServicesEnv {..} (MockServices act) =
   runNoLoggingT
-    $ runMockGetArgsT args
-    $ runMockReadFileT infileContents
+    $ runMockGetArgsT cmdLineArgs
+    $ runMockReadFileT inputFileSystem
     $ runMockWriteFileT act
 
 spec :: Spec
 spec = describe "cp" $ do
   it "should copy a file" $ do
     ((), result) <- runMockServices
-      ("input.txt", "output.txt")
-      (Map.fromList [("input.txt", "Hello world!")])
+      defaultMockServicesEnv
+        { inputFileSystem = Map.fromList [("input.txt", "Hello world!")]
+        }
       cp
     result `shouldBe` Map.fromList [("output.txt", "Hello world!")]
   it "should read from a real file" $ do
     ((), result) <-
-      runMockServices ("test/test_input.txt", "output.txt") (error "unused")
+      runMockServices defaultMockServicesEnv
+          { cmdLineArgs = ("test/test_input.txt", "output.txt")
+          }
         $ runReadFileT cp
     result `shouldBe` Map.fromList [("output.txt", "Hello world!\n")]
