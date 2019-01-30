@@ -1,6 +1,8 @@
-{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module CP.Class.WriteFile where
 
@@ -9,22 +11,18 @@ import           Control.Monad.State            ( StateT )
 import           Control.Monad.Trans           as Trans
 
 import           CP.Class.IsHandle
+import           Transformed
 
 class (Monad m, IsHandle (WriteFileHandle m)) => MonadWriteFile m where
   type WriteFileHandle m
 
   openWriteHandle :: String -> m (WriteFileHandle m)
-  default openWriteHandle
-    :: (MonadTrans t, MonadWriteFile n, m ~ t n, WriteFileHandle m ~ WriteFileHandle n)
-    => String -> m (WriteFileHandle m)
-  openWriteHandle = Trans.lift . openWriteHandle
   writeFileContents :: WriteFileHandle m -> String -> m ()
-  default writeFileContents
-    :: (MonadTrans t, MonadWriteFile n, m ~ t n, WriteFileHandle m ~ WriteFileHandle n)
-    => WriteFileHandle m -> String -> m ()
+
+instance (MonadTrans t, MonadWriteFile m, Monad (t m)) => MonadWriteFile (Transformed t m) where
+  type WriteFileHandle (Transformed t m) = WriteFileHandle m
+  openWriteHandle = Trans.lift . openWriteHandle
   writeFileContents = (Trans.lift .) . writeFileContents
 
-instance MonadWriteFile m => MonadWriteFile (StateT s m) where
-  type WriteFileHandle (StateT s m) = WriteFileHandle m
-instance MonadWriteFile m => MonadWriteFile (ReaderT r m) where
-  type WriteFileHandle (ReaderT r m) = WriteFileHandle m
+deriving via (Transformed (StateT s) m) instance MonadWriteFile m => MonadWriteFile (StateT s m)
+deriving via (Transformed (ReaderT r) m) instance MonadWriteFile m => MonadWriteFile (ReaderT r m)
