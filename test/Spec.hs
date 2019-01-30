@@ -41,6 +41,9 @@ runMockServices MockServicesEnv {..} (MockServices act) =
     $ runMockReadFileT inputFileSystem
     $ runMockWriteFileT act
 
+-- Tests behave as if there are separate input and output file systems so that we can separately
+-- mock either one.
+
 spec :: Spec
 spec = describe "cp" $ do
   it "should copy a file" $ do
