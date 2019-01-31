@@ -1,10 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Impl.ReadFileImpl where
 
 import           Control.Monad.IO.Class
-import           Control.Monad.Logger           ( MonadLogger )
 import qualified Data.Text                     as Text
 import           System.IO                      ( IOMode(..)
                                                 , hGetContents
@@ -12,10 +13,13 @@ import           System.IO                      ( IOMode(..)
                                                 )
 
 import           CP.Class
+import           CP.TH
 import           Impl.Handle
 
 newtype ReadFileT m x = ReadFileT {runReadFileT :: m x}
-  deriving (Functor, Applicative, Monad, MonadIO, MonadGetArgs, MonadLogger, MonadWriteFile)
+  deriving (Functor, Applicative, Monad, MonadIO)
+
+$(deriveAllT ''ReadFileT [''MonadReadFile])
 
 instance MonadIO m => MonadReadFile (ReadFileT m) where
   type ReadFileHandle (ReadFileT m) = Handle

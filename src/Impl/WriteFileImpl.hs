@@ -1,10 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Impl.WriteFileImpl where
 
 import           Control.Monad.IO.Class
-import           Control.Monad.Logger           ( MonadLogger )
 import qualified Data.Text                     as Text
 import           System.IO                      ( IOMode(..)
                                                 , hClose
@@ -13,10 +14,13 @@ import           System.IO                      ( IOMode(..)
                                                 )
 
 import           CP.Class
+import           CP.TH
 import           Impl.Handle
 
 newtype WriteFileT m x = WriteFileT {runWriteFileT :: m x}
-  deriving (Functor, Applicative, Monad, MonadIO, MonadGetArgs, MonadLogger, MonadReadFile)
+  deriving (Functor, Applicative, Monad, MonadIO)
+
+$(deriveAllT ''WriteFileT [''MonadWriteFile])
 
 instance MonadIO m => MonadWriteFile (WriteFileT m) where
   type WriteFileHandle (WriteFileT m) = Handle

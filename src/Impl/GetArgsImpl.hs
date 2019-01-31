@@ -1,16 +1,20 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Impl.GetArgsImpl where
 
 import           CP.Class
+import           CP.TH
 
 import           Control.Monad.IO.Class
-import           Control.Monad.Logger           ( MonadLogger )
 import qualified System.Environment            as IO
                                                 ( getArgs )
 
 newtype GetArgsT m x = GetArgsT {runGetArgsT :: m x}
-  deriving (Functor, Applicative, Monad, MonadIO, MonadLogger, MonadReadFile, MonadWriteFile)
+  deriving (Functor, Applicative, Monad, MonadIO)
+
+$(deriveAllT ''GetArgsT [''MonadGetArgs])
 
 instance MonadIO m => MonadGetArgs (GetArgsT m) where
   getArgs = liftIO IO.getArgs >>= \case

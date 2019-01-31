@@ -1,5 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -10,17 +12,20 @@ import qualified Data.Map                      as Map
 import           Test.Hspec
 
 import           CP
+import           CP.TH                          ( deriveAll )
 import           Impl.ReadFileImpl
 import           SpecUtil.MockGetArgsT
 import           SpecUtil.MockReadFileT
 import           SpecUtil.MockWriteFileT
 
-main :: IO ()
-main = hspec spec
-
 newtype MockServices x =
     MockServices (MockWriteFileT (MockReadFileT (MockGetArgsT (NoLoggingT IO))) x)
-  deriving (Functor, Applicative, Monad, MonadIO, MonadGetArgs, MonadLogger, MonadReadFile, MonadWriteFile)
+  deriving (Functor, Applicative, Monad, MonadIO)
+
+$(deriveAll ''MockServices [])
+
+main :: IO ()
+main = hspec spec
 
 data MockServicesEnv = MockServicesEnv
   { cmdLineArgs :: (String, String)

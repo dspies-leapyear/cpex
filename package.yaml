@@ -21,8 +21,10 @@ description:         Please see the README on GitHub at <https://github.com/dspi
 
 dependencies:
 - base >= 4.7 && < 5
+- containers
 - monad-logger
 - mtl
+- template-haskell
 - text
 
 default-extensions:

@@ -1,10 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module SpecUtil.MockReadFileT where
 
-import           Control.Monad.Logger           ( MonadLogger )
+import           Control.Monad.IO.Class         ( MonadIO )
 import           Control.Monad.Reader          as Reader
 import           Data.Map                       ( Map )
 import qualified Data.Map                      as Map
@@ -12,6 +14,7 @@ import           Data.Text                      ( Text )
 import qualified Data.Text                     as Text
 
 import           CP
+import           CP.TH
 
 data MockReadFileHandle = MockReadFileHandle
   { readPath :: Text
@@ -24,7 +27,9 @@ instance IsHandle MockReadFileHandle where
 type MockReadFiles = Map String String -- Map file name to contents
 
 newtype MockReadFileT m x = MockReadFileT (ReaderT MockReadFiles m x)
-  deriving (Functor, Applicative, Monad, MonadGetArgs, MonadIO, MonadLogger, MonadWriteFile, MonadReader MockReadFiles)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadReader MockReadFiles)
+
+$(deriveAllT ''MockReadFileT [''MonadReadFile])
 
 runMockReadFileT :: MockReadFiles -> MockReadFileT m x -> m x
 runMockReadFileT mockFS (MockReadFileT act) = runReaderT act mockFS
